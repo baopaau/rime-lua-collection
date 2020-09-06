@@ -3,6 +3,7 @@
 -- 格式：U<d|x|o><code>
 -- d、x、o對應十進制、十六進制、八進制
 -- 如 Ux5C13 和 Ud23571 均輸出 `尓`
+-- 須在方案增加 `recognizer/patterns/unicode: "^U.*$"`
 local string_char = string.char
 
 local function utf8(cp)
