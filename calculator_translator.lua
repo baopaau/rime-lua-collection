@@ -1,4 +1,4 @@
--- Rime Script
+-- Rime Script >https://github.com/baopaau/rime-lua-collection/blob/master/calculator_translator.lua
 -- 簡易計算器（執行任何Lua表達式）
 -- 格式：=<exp>
 -- 例子：
@@ -39,24 +39,32 @@ ult = math.ult
 e = exp(1)
 ln = math.log
 
+date = os.date
+time = os.time
+
 -- greedy：隨時求值（每次變化都會求值，否則結尾爲特定字符時求值）
 local greedy = true
+
 local function calculator_translator(input, seg)
   if string.sub(input, 1, 1) ~= "=" then return end
   
-  local expfin = greedy or string.sub(input, -1, -1) == "E"
+  local expfin = greedy or string.sub(input, -1, -1) == ";"
   local exp = (greedy or not expfin) and string.sub(input, 2, -1) or string.sub(input, 2, -2)
   
   yield(Candidate("number", seg.start, seg._end, exp, "表達式"))
        
   if not expfin then return end
   
+  -- 防止危險操作，禁用os和io命名空間
+  if exp:find("i?os?%.") then return end
   -- return語句保證了只有合法的Lua表達式才可執行
   local result = load("return "..exp)()
   if result == nil then return end
+  
   if result == true then result = "true" end
   if result == false then result = "false" end
   yield(Candidate("number", seg.start, seg._end, result, "答案"))
+  yield(Candidate("number", seg.start, seg._end, exp.." = "..result, "等式"))
 end
 
 return calculator_translator
