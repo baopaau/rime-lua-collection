@@ -7,7 +7,7 @@
 -- =floor(9^(8/7)*cos(deg(6))) 輸出 -3
 -- =e^pi>pi^e 輸出 true
 -- =max({1,7,2}) 輸出 7
--- =map({1,2,3},\x->x^2|) 輸出 {1.0, 4.0, 9.0}
+-- =map({1,2,3},\x->x^2|) 輸出 {1, 4, 9}
 -- 需在方案增加 `recognizer/patterns/expression: "^=.*$"`
 
 -- 定義直呼函數（注意命名空間污染）
@@ -20,7 +20,6 @@ cos = math.cos
 deg = math.deg
 exp = math.exp
 floor = math.floor
-fmod = math.fmod
 huge = math.huge
 max = math.max
 maxinteger = math.maxinteger
@@ -38,13 +37,16 @@ tointeger = math.tointeger
 type = math.type
 ult = math.ult
 
+mod = math.fmod
 inf = 1/0
 e = exp(1)
 ln = math.log
+
 log = function (x, base)
   base = base or 10
   return ln(x)/ln(base)
 end
+
 min = function (arr)
   local m = inf
   for k, x in ipairs(arr) do
@@ -52,6 +54,7 @@ min = function (arr)
   end
   return m
 end
+
 max = function (arr)
   local m = -inf
   for k, x in ipairs(arr) do
@@ -60,6 +63,9 @@ max = function (arr)
   return m
 end
 
+isinteger = function (x)
+  return math.fmod(x, 1) == 0
+end
 
 -- iterator -> array
 array = function (...)
@@ -127,8 +133,24 @@ filter = function (t, f)
   return ta
 end
 
--- 鏈式調用函數
--- 用例：chain(range(-5,5))(map,\x->x/5|)(map,sin)(map,\x->e^x*10|)(map,floor)() = {4, 4, 5, 6, 8, 10, 12, 14, 17, 20}
+-- e.g: foldr({2,3},\n,x->x^n|,2) = 81
+foldr = function (t, f, val)
+  for k,v in pairs(t) do
+    val = f(val, v)
+  end
+  return val
+end
+
+-- e.g: foldl({2,3},\n,x->x^n|,2) = 512
+foldl = function (t, f, val)
+  for v in irev(t) do
+    val = f(val, v)
+  end
+  return val
+end
+
+-- 鏈式調用函數（HOF for method chaining）
+-- e.g: chain(range(-5,5))(map,\x->x/5|)(map,sin)(map,\x->e^x*10|)(map,floor)() = {4, 4, 5, 6, 8, 10, 12, 14, 17, 20}
 chain = function (t)
   local ta = t
   local function cf(f, ...)
@@ -142,6 +164,30 @@ chain = function (t)
   return cf
 end
 
+-- # Statistics
+fac = function (n)
+  local acc = 1
+  for i = 2,n do
+    acc = acc * i
+  end
+  return acc
+end
+
+perm = function (n, r)
+  return fac(n) / fac(n - r)
+end
+
+comb = function (n, r)
+  return perm(n,r) / fac(r)
+end
+
+sum = function (t)
+  local acc = 0
+  for k,v in ipairs(t) do
+    acc = acc + v
+  end
+  return acc
+end
 
 -- # Linear Algebra
 
@@ -166,13 +212,13 @@ end
 -- Trapezoidal rule
 trapzo = function (f, a, b, n)
   local dif = b - a
-  local sum = 0
+  local acc = 0
   for i = 1, n-1 do
-    sum = sum + f(a + dif * (i/n))
+    acc = acc + f(a + dif * (i/n))
   end
-  sum = sum * 2 + f(a) + f(b)
-  sum = sum * dif / n / 2
-  return sum
+  acc = acc * 2 + f(a) + f(b)
+  acc = acc * dif / n / 2
+  return acc
 end
 
 -- Runge-Kutta
@@ -209,7 +255,7 @@ local function serialize(obj)
   local str
   -- 應對 type(obj) 返回值非標準
   if type(obj) ~= nil then -- integer/float類型
-    str = obj
+    str = isinteger(obj) and floor(obj) or obj
   elseif obj == true then -- boolean類型
     str = "true"
   elseif obj == false then --
