@@ -1,4 +1,4 @@
--- Rime Script
+-- Rime Script >https://github.com/baopaau/rime-lua-collection/blob/master/unicode_translator.lua
 -- Unicode 內碼轉譯（輸出任意Unicode字符）
 -- 格式：U<d|x|o><code>
 -- d、x、o對應十進制、十六進制、八進制
