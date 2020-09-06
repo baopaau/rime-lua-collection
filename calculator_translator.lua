@@ -10,38 +10,33 @@
 -- =map({1,2,3},\x->x^2|) 輸出 {1, 4, 9}
 -- 需在方案增加 `recognizer/patterns/expression: "^=.*$"`
 
--- 定義直呼函數（注意命名空間污染）
-abs = math.abs
+-- 定義全局函數、常數（注意命名空間污染）
+cos = math.cos
+sin = math.sin
+tan = math.tan
 acos = math.acos
 asin = math.asin
 atan = math.atan
-ceil = math.ceil
-cos = math.cos
-deg = math.deg
-exp = math.exp
-floor = math.floor
-huge = math.huge
-max = math.max
-maxinteger = math.maxinteger
-min = math.min
-mininteger = math.mininteger
-modf = math.modf
-pi = math.pi
 rad = math.rad
+deg = math.deg
+
+abs = math.abs
+floor = math.floor
+ceil = math.ceil
+trunc = math.modf
+mod = math.fmod
+
 random = math.random
 randomseed = math.randomseed
-sin = math.sin
-sqrt = math.sqrt
-tan = math.tan
-tointeger = math.tointeger
-type = math.type
-ult = math.ult
 
-mod = math.fmod
-inf = 1/0
+inf = math.huge
+MAX_INT = math.maxinteger
+MIN_INT = math.mininteger
+pi = math.pi
+sqrt = math.sqrt
+exp = math.exp
 e = exp(1)
 ln = math.log
-
 log = function (x, base)
   base = base or 10
   return ln(x)/ln(base)
@@ -61,6 +56,18 @@ max = function (arr)
    m = x > m and x or m
   end
   return m
+end
+
+sum = function (t)
+  local acc = 0
+  for k,v in ipairs(t) do
+    acc = acc + v
+  end
+  return acc
+end
+
+avg = function (t)
+  return sum(t) / #t
 end
 
 isinteger = function (x)
@@ -173,20 +180,23 @@ fac = function (n)
   return acc
 end
 
-perm = function (n, r)
+nPr = function (n, r)
   return fac(n) / fac(n - r)
 end
 
-comb = function (n, r)
-  return perm(n,r) / fac(r)
+nCr = function (n, r)
+  return nPr(n,r) / fac(r)
 end
 
-sum = function (t)
-  local acc = 0
+MSE = function (t)
+  local ss = 0
+  local s = 0
+  local n = #t
   for k,v in ipairs(t) do
-    acc = acc + v
+    ss = ss + v*v
+    s = s + v
   end
-  return acc
+  return sqrt((n*ss - s*s) / (n*n))
 end
 
 -- # Linear Algebra
@@ -242,7 +252,6 @@ rk4 = function (f, timestep)
 end
 
 
-
 -- # System
 date = os.date
 time = os.time
@@ -252,20 +261,15 @@ end
 
 
 local function serialize(obj)
-  local str
-  -- 應對 type(obj) 返回值非標準
-  if type(obj) ~= nil then -- integer/float類型
-    str = isinteger(obj) and floor(obj) or obj
-  elseif obj == true then -- boolean類型
-    str = "true"
-  elseif obj == false then --
-    str = "false"
-  elseif pcall(string.len, obj) then -- string類型
-    str = obj
-  elseif pcall(obj) then -- function類型
-    str = "function"
-  else -- table類型
-    str = "{"
+  local type = type(obj)
+  if type == "number" then
+    return isinteger(obj) and floor(obj) or obj
+  elseif type == "boolean" then
+    return tostring(obj)
+  elseif type == "string" then
+    return '"'..obj..'"'
+  elseif type == "table" then
+    local str = "{"
     local i = 1
     for k, v in pairs(obj) do
       if i ~= k then  
@@ -275,9 +279,11 @@ local function serialize(obj)
       i = i + 1
     end
     str = str:len() > 3 and str:sub(0,-3) or str
-    str = str.."}" 
+    return str.."}"
+  elseif pcall(obj) then -- function類型
+    return "callable"
   end
-  return str
+  return obj
 end
 
 -- greedy：隨時求值（每次變化都會求值，否則結尾爲特定字符時求值）
@@ -304,7 +310,7 @@ local function calculator_translator(input, seg)
       expe, count = expe:gsub("\\%s*([%a%d%s,_]-)%s*->(.-)|", " (function (%1) return %2 end) ")
     until count == 0
   end
-  yield(Candidate("number", seg.start, seg._end, expe, "展開"))
+  --yield(Candidate("number", seg.start, seg._end, expe, "展開"))
   
   -- 防止危險操作，禁用os和io命名空間
   if expe:find("i?os?%.") then return end
