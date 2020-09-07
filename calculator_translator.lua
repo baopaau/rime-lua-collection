@@ -11,8 +11,9 @@
 -- =max({1,7,2}) 輸出 7
 -- =map({1,2,3},\x.x^2|) 輸出 {1, 4, 9}
 -- =map(range(-5,5),\x.x*pi/4|,deriv(sin)) 輸出 {-0.7071, -1, -0.7071, 0, 0.7071, 1, 0.7071, 0, -0.7071, -1}
--- =$(range(-50,50))(map,\x.x/100|,\x.-60*x^2-16*x+20|)(max)() 輸出 21.066
-
+-- =$(range(-5,5,0.01))(map,\x.-60*x^2-16*x+20|)(max)() 輸出 21.066
+-- =test(\x.trunc(sin(x),1e-3)==trunc(deriv(cos)(x),1e-3)|,range(-2,2,0.1)) 輸出 true
+--
 -- 需在方案增加 `recognizer/patterns/expression: "^=.*$"`
 
 -- 定義全局函數、常數（注意命名空間污染）
@@ -103,24 +104,25 @@ array = function (...)
 end
 
 -- iterator <- [form, to)
-irange = function (from,to)
+irange = function (from, to, step)
   if to == nil then
     to = from
     from = 0
   end
-  local i = from - 1
-  to = to - 1
+  step = step or 1
+  local i = from - step
+  to = to - step
   return function()
     if i < to then
-      i = i + 1
+      i = i + step
       return i
     end
   end
 end
 
 -- array <- [form, to)
-range = function (from, to)
-  return array(irange(from, to))
+range = function (from, to, step)
+  return array(irange(from, to, step))
 end
 
 -- array . reversed iterator
@@ -139,6 +141,14 @@ arev = function (arr)
   return array(irev(arr))
 end
 
+test = function (f, t)
+  for k,v in ipairs(t) do
+    if not f(v) then
+      return false
+    end
+  end
+  return true
+end
 
 -- # Functional
 map = function (t, ...)
