@@ -181,19 +181,19 @@ filter = function (t, ...)
 end
 
 -- e.g: foldr({2,3},\n,x.x^n|,2) = 81
-foldr = function (t, f, val)
+foldr = function (t, f, acc)
   for k,v in pairs(t) do
-    val = f(val, v)
+    acc = f(acc, v)
   end
-  return val
+  return acc
 end
 
 -- e.g: foldl({2,3},\n,x.x^n|,2) = 512
-foldl = function (t, f, val)
+foldl = function (t, f, acc)
   for v in irev(t) do
-    val = f(val, v)
+    acc = f(acc, v)
   end
-  return val
+  return acc
 end
 
 -- 調用鏈生成函數（HOF for method chaining）
