@@ -2,15 +2,15 @@
 -- 簡易計算器（執行任何Lua表達式）
 --
 -- 格式：=<exp>
--- Lambda語法糖：\<arg>-><exp>|
+-- Lambda語法糖：\<arg>.<exp>|
 --
 -- 例子：
 -- =1+1 輸出 2
 -- =floor(9^(8/7)*cos(deg(6))) 輸出 -3
 -- =e^pi>pi^e 輸出 true
 -- =max({1,7,2}) 輸出 7
--- =map({1,2,3},\x->x^2|) 輸出 {1, 4, 9}
--- =chain(range(-5,5))(map,\x->x*pi/4|)(map,deriv(sin))()
+-- =map({1,2,3},\x.x^2|) 輸出 {1, 4, 9}
+-- =chain(range(-5,5))(map,\x.x*pi/4|)(map,deriv(sin))()
 --  輸出 {-0.7071, -1, -0.7071, 0, 0.7071, 1, 0.7071, 0, -0.7071, -1}
 --
 -- 需在方案增加 `recognizer/patterns/expression: "^=.*$"`
@@ -93,7 +93,7 @@ isinteger = function (x)
   return math.fmod(x, 1) == 0
 end
 
--- iterator -> array
+-- iterator . array
 array = function (...)
   local arr = {}
   for v in ... do
@@ -123,7 +123,7 @@ range = function (from, to)
   return array(irange(from, to))
 end
 
--- array -> reversed iterator
+-- array . reversed iterator
 irev = function (arr)
   local i = #arr + 1
   return function()
@@ -134,7 +134,7 @@ irev = function (arr)
   end
 end
 
--- array -> reversed array
+-- array . reversed array
 arev = function (arr)
   return array(irev(arr))
 end
@@ -159,7 +159,7 @@ filter = function (t, f)
   return ta
 end
 
--- e.g: foldr({2,3},\n,x->x^n|,2) = 81
+-- e.g: foldr({2,3},\n,x.x^n|,2) = 81
 foldr = function (t, f, val)
   for k,v in pairs(t) do
     val = f(val, v)
@@ -167,7 +167,7 @@ foldr = function (t, f, val)
   return val
 end
 
--- e.g: foldl({2,3},\n,x->x^n|,2) = 512
+-- e.g: foldl({2,3},\n,x.x^n|,2) = 512
 foldl = function (t, f, val)
   for v in irev(t) do
     val = f(val, v)
@@ -176,8 +176,8 @@ foldl = function (t, f, val)
 end
 
 -- 調用鏈生成函數（HOF for method chaining）
--- e.g: chain(range(-5,5))(map,\x->x/5|)(map,sin)(map,\x->e^x*10|)(map,floor)()
---    = floor(map(map(map(range(-5,5),\x->x/5|),sin),\x->e^x*10|))
+-- e.g: chain(range(-5,5))(map,\x.x/5|)(map,sin)(map,\x.e^x*10|)(map,floor)()
+--    = floor(map(map(map(range(-5,5),\x.x/5|),sin),\x.e^x*10|))
 --    = {4, 4, 5, 6, 8, 10, 12, 14, 17, 20}
 chain = function (t)
   local ta = t
@@ -351,7 +351,7 @@ local function calculator_translator(input, seg)
   do
     local count
     repeat
-      expe, count = expe:gsub("\\%s*([%a%d%s,_]-)%s*->(.-)|", " (function (%1) return %2 end) ")
+      expe, count = expe:gsub("\\%s*([%a%d%s,_]-)%s*%.(.-)|", " (function (%1) return %2 end) ")
     until count == 0
   end
   --yield(Candidate("number", seg.start, seg._end, expe, "展開"))
