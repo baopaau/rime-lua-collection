@@ -1,13 +1,18 @@
 -- Rime Script >https://github.com/baopaau/rime-lua-collection/blob/master/calculator_translator.lua
 -- 簡易計算器（執行任何Lua表達式）
+--
 -- 格式：=<exp>
 -- Lambda語法糖：\<arg>-><exp>|
+--
 -- 例子：
 -- =1+1 輸出 2
 -- =floor(9^(8/7)*cos(deg(6))) 輸出 -3
 -- =e^pi>pi^e 輸出 true
 -- =max({1,7,2}) 輸出 7
 -- =map({1,2,3},\x->x^2|) 輸出 {1, 4, 9}
+-- =chain(range(-5,5))(map,\x->x*pi/4|)(map,deriv(sin))()
+--  輸出 {-0.7071, -1, -0.7071, 0, 0.7071, 1, 0.7071, 0, -0.7071, -1}
+--
 -- 需在方案增加 `recognizer/patterns/expression: "^=.*$"`
 
 -- 定義全局函數、常數（注意命名空間污染）
@@ -23,8 +28,22 @@ deg = math.deg
 abs = math.abs
 floor = math.floor
 ceil = math.ceil
-trunc = math.modf
 mod = math.fmod
+trunc = function (x, dc)
+  if dc == nil then
+    return math.modf(x)
+  end
+  return x - mod(x, dc)
+end
+
+round = function (x, dc)
+  dc = dc or 1
+  local dif = mod(x, dc)
+  if abs(dif) > dc / 2 then
+    return x < 0 and x - dif - dc or x - dif + dc
+  end
+  return x - dif
+end
 
 random = math.random
 randomseed = math.randomseed
@@ -156,8 +175,10 @@ foldl = function (t, f, val)
   return val
 end
 
--- 鏈式調用函數（HOF for method chaining）
--- e.g: chain(range(-5,5))(map,\x->x/5|)(map,sin)(map,\x->e^x*10|)(map,floor)() = {4, 4, 5, 6, 8, 10, 12, 14, 17, 20}
+-- 調用鏈生成函數（HOF for method chaining）
+-- e.g: chain(range(-5,5))(map,\x->x/5|)(map,sin)(map,\x->e^x*10|)(map,floor)()
+--    = floor(map(map(map(range(-5,5),\x->x/5|),sin),\x->e^x*10|))
+--    = {4, 4, 5, 6, 8, 10, 12, 14, 17, 20}
 chain = function (t)
   local ta = t
   local function cf(f, ...)
@@ -211,11 +232,20 @@ lapproxd = function (f, delta)
          end
 end
 
--- Linear approximation
-mlapproxd = function (f, delta)
+-- Symmetric approximation
+sapproxd = function (f, delta)
   local delta = delta or 1e-8
   return function (x)
            return (f(x+delta) - f(x-delta)) / delta / 2
+         end
+end
+
+-- 近似導數
+deriv = function (f, delta, dc)
+  dc = dc or 1e-4
+  local fd = sapproxd(f, delta)
+  return function (x)
+           return round(fd(x), dc)
          end
 end
 
@@ -229,6 +259,20 @@ trapzo = function (f, a, b, n)
   acc = acc * 2 + f(a) + f(b)
   acc = acc * dif / n / 2
   return acc
+end
+
+-- 近似積分
+integ = function (f, delta, dc)
+  delta = delta or 1e-4
+  dc = dc or 1e-4
+  return function (a, b)
+           if b == nil then
+             b = a
+             a = 0
+           end
+           local n = round(abs(b - a) / delta)
+           return round(trapzo(f, a, b, n), dc)
+         end
 end
 
 -- Runge-Kutta
