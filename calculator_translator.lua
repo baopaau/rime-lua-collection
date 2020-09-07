@@ -10,9 +10,9 @@
 -- =e^pi>pi^e 輸出 true
 -- =max({1,7,2}) 輸出 7
 -- =map({1,2,3},\x.x^2|) 輸出 {1, 4, 9}
--- =$(range(-5,5))(map,\x.x*pi/4|)(map,deriv(sin))()
---  輸出 {-0.7071, -1, -0.7071, 0, 0.7071, 1, 0.7071, 0, -0.7071, -1}
---
+-- =map(range(-5,5),\x.x*pi/4|,deriv(sin)) 輸出 {-0.7071, -1, -0.7071, 0, 0.7071, 1, 0.7071, 0, -0.7071, -1}
+-- =$(range(-50,50))(map,\x.x/100|,\x.-60*x^2-16*x+20|)(max)() 輸出 21.066
+
 -- 需在方案增加 `recognizer/patterns/expression: "^=.*$"`
 
 -- 定義全局函數、常數（注意命名空間污染）
@@ -143,8 +143,10 @@ end
 -- # Functional
 map = function (t, ...)
   local ta = {}
-  for _,f in pairs({...}) do
-    for k,v in pairs(t) do ta[k] = f(v) end
+  for k,v in pairs(t) do
+    local tmp = v
+    for _,f in pairs({...}) do tmp = f(tmp) end
+    ta[k] = tmp
   end
   return ta
 end
