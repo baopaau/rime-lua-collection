@@ -10,7 +10,7 @@
 -- =e^pi>pi^e 輸出 true
 -- =max({1,7,2}) 輸出 7
 -- =map({1,2,3},\x.x^2|) 輸出 {1, 4, 9}
--- =chain(range(-5,5))(map,\x.x*pi/4|)(map,deriv(sin))()
+-- =$(range(-5,5))(map,\x.x*pi/4|)(map,deriv(sin))()
 --  輸出 {-0.7071, -1, -0.7071, 0, 0.7071, 1, 0.7071, 0, -0.7071, -1}
 --
 -- 需在方案增加 `recognizer/patterns/expression: "^=.*$"`
@@ -141,17 +141,26 @@ end
 
 
 -- # Functional
-map = function (t, f)
+map = function (t, ...)
   local ta = {}
-  for k,v in pairs(t) do ta[k] = f(v) end
+  for _,f in pairs({...}) do
+    for k,v in pairs(t) do ta[k] = f(v) end
+  end
   return ta
 end
 
-filter = function (t, f)
+filter = function (t, ...)
   local ta = {}
   local i = 1
   for k,v in pairs(t) do
-    if f(v) then
+    local erase = false
+    for _,f in pairs({...}) do
+      if not f(v) then
+        erase = true
+        break
+      end
+    end
+    if not erase then
 	  ta[i] = v
 	  i = i + 1
     end
@@ -179,6 +188,7 @@ end
 -- e.g: chain(range(-5,5))(map,\x.x/5|)(map,sin)(map,\x.e^x*10|)(map,floor)()
 --    = floor(map(map(map(range(-5,5),\x.x/5|),sin),\x.e^x*10|))
 --    = {4, 4, 5, 6, 8, 10, 12, 14, 17, 20}
+-- 可以用 $ 代替 chain
 chain = function (t)
   local ta = t
   local function cf(f, ...)
@@ -346,8 +356,10 @@ local function calculator_translator(input, seg)
        
   if not expfin then return end
   
-  -- lambda語法糖
   local expe = exp
+  -- 鏈式調用語法糖
+  expe = expe:gsub("%$", " chain ")
+  -- lambda語法糖
   do
     local count
     repeat
