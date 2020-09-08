@@ -14,7 +14,17 @@
 -- =$(range(-5,5,0.01))(map,\x.-60*x^2-16*x+20|)(max)() 輸出 21.066
 -- =test(\x.trunc(sin(x),1e-3)==trunc(deriv(cos)(x),1e-3)|,range(-2,2,0.1)) 輸出 true
 --
--- 需在方案增加 `recognizer/patterns/expression: "^=.*$"`
+-- 安装：
+-- - 將本文件保存至 <rime>/lua/
+-- - 在 <rime>/rime.lua 新增一行：
+--   `calculator_translator = require("calculator_translator")`
+-- - 在 <rime>/<schema>.schema.yaml 新增：
+--   `engine/translators/@next: lua_translator@calculator_translator`
+--   `recognizer/patterns/expression: "^=.*$"`
+-- 註：
+-- - <rime> 替換爲RIME的共享目錄
+-- - <schema> 替換爲自己的方案ID
+-- - 如目錄／文件不存在，請自行創建
 
 -- 定義全局函數、常數（注意命名空間污染）
 cos = math.cos
