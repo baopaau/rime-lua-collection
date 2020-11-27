@@ -1,5 +1,15 @@
 # rime-lua-collection
-Rime Lua腳本分享
+
+配方： ℞ **baopaau/rime-lua-collection**
+
+[Rime](https://rime.im) Lua腳本
+ 
+
+## 安裝
+
+[東風破](https://github.com/rime/plum) 安裝口令： `bash rime-install baopaau/rime-lua-collection`
+
+授權條款：見 [LICENSE](LICENSE)
 
 ## 使用
 
