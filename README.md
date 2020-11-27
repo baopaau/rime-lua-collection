@@ -9,6 +9,8 @@
 
 [東風破](https://github.com/rime/plum) 安裝口令： `bash rime-install baopaau/rime-lua-collection`
 
+依賴[librime-lua](https://github.com/hchunhui/librime-lua)
+
 授權條款：見 [LICENSE](LICENSE)
 
 ## 使用
