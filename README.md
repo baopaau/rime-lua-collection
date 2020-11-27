@@ -2,12 +2,15 @@
 
 配方： ℞ **baopaau/rime-lua-collection**
 
-[Rime](https://rime.im) Lua腳本
- 
+[Rime](https://rime.im) Lua 腳本
+## [`unicode_translator.lua`](unicode_translator.lua)
+在Rime輸入任意Unicode字符
+## [`calculator_translator.lua`]( calculator_translator.lua)
+在Rime使用計算器
 
 ## 安裝
 
-[東風破](https://github.com/rime/plum) 安裝口令： `bash rime-install baopaau/rime-lua-collection`
+[東風破](https://github.com/rime/plum) 安裝口令： `bash rime-install baopaau/rime-lua-collection` （暫不可用）
 
 依賴[librime-lua](https://github.com/hchunhui/librime-lua)
 
