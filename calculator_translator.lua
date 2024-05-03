@@ -1,5 +1,9 @@
--- Rime Script >https://github.com/baopaau/rime-lua-collection/blob/master/calculator_translator.lua
 -- 簡易計算器（執行任何Lua表達式）
+-- 来源: https://github.com/baopaau/rime-lua-collection/blob/master/calculator_translator.lua
+
+-- Mintimate <https://github.com/Mintimate> 修改:
+--   1. 解决了 鼠须管输入法 调用可能存在的问题。
+--   2. 动态获取触发前缀。
 --
 -- 格式：=<exp>
 -- Lambda語法糖：\<arg>.<exp>|
@@ -362,43 +366,68 @@ local function serialize(obj)
   return obj
 end
 
--- greedy：隨時求值（每次變化都會求值，否則結尾爲特定字符時求值）
-local greedy = true
+-- 是否随时计算
+local ImmediateCalculation = true
 
-local function calculator_translator(input, seg)
-  if string.sub(input, 1, 1) ~= "=" then return end
-  
-  local expfin = greedy or string.sub(input, -1, -1) == ";"
-  local exp = (greedy or not expfin) and string.sub(input, 2, -1) or string.sub(input, 2, -2)
-  
-  -- 空格輸入可能
+local function calculator_translator(input, seg, env)
+
+  -- 获取 recognizer/patterns/expression 的第 2 个字符作为触发前缀（也就是获取等于号 = 或其他自定义字符）
+  local expression_keyword = env.engine.schema.config:get_string('recognizer/patterns/expression'):sub(2, 2)
+
+  -- 如果当前输入的是触发前缀，则尝试解析输入的 Lua 表达式，其中 seg:has_tag 判断是否是候选词；否则返回
+  if not (seg:has_tag("expression") and expression_keyword ~= '' and input:sub(1, 1) == expression_keyword) then
+      return
+  end
+
+  -- 解决 鼠须管 单个 input 字直接上屏问题
+  if string.len(input) < 2 then
+      -- 输入内容太短，不做处理
+      return
+  end
+
+  -- 匹配结束标记字符
+  local expfin = ImmediateCalculation or input:sub(-1, -1) == ";"
+  if not expfin then
+      return
+  end
+
+  -- yield(Candidate("number", seg.start, seg._end, input, "输入的字符"))
+
+  local exp = (ImmediateCalculation or not expfin) and input:sub(2, -1) or input:sub(2, -2)
+
+  -- 空格输入可能
   exp = exp:gsub("#", " ")
-  
-  yield(Candidate("number", seg.start, seg._end, exp, "表達式"))
-       
-  if not expfin then return end
-  
+
+  -- yield(Candidate("number", seg.start, seg._end, exp, "表达式"))
+
   local expe = exp
-  -- 鏈式調用語法糖
+  -- 链式调用语法糖
   expe = expe:gsub("%$", " chain ")
   -- lambda語法糖
   do
-    local count
-    repeat
-      expe, count = expe:gsub("\\%s*([%a%d%s,_]-)%s*%.(.-)|", " (function (%1) return %2 end) ")
-    until count == 0
+      local count
+      repeat
+          expe, count = expe:gsub("\\%s*([%a%d%s,_]-)%s*%.(.-)|", " (function (%1) return %2 end) ")
+      until count == 0
   end
-  --yield(Candidate("number", seg.start, seg._end, expe, "展開"))
-  
+
+  yield(Candidate("number", seg.start, seg._end, expe, "展开"))
+
   -- 防止危險操作，禁用os和io命名空間
-  if expe:find("i?os?%.") then return end
-  -- return語句保證了只有合法的Lua表達式才可執行
-  local result = load("return "..expe)()
-  if result == nil then return end
-  
-  result = serialize(result)
+  if expe:find("i?os?%.") then
+      return
+  end
+
+  -- 表达式的计算
+  local result = load("return " .. expe)()
+  if result == nil then
+      return
+  end
+
+  result = serialize(result, seg)
   yield(Candidate("number", seg.start, seg._end, result, "答案"))
-  yield(Candidate("number", seg.start, seg._end, exp.." = "..result, "等式"))
+  yield(Candidate("number", seg.start, seg._end, exp .. " = " .. result, "等式"))
+
 end
 
 return calculator_translator
