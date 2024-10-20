@@ -32,3 +32,5 @@ patch:
   recognizer/patterns/unicode: "^U.*$"
   recognizer/patterns/expression: "^=.*$"
 ```
+
+其中：`"^=.*$"`內的`=`可以換為其他字符，如：`C`、`A`等。
